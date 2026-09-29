@@ -3,208 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Car Advertisement Explorer | 3009ICT</title>
-  <meta name="description" content="3009ICT Data Processing and Visualisation: interactive analysis of cleaned car advertisement data.">
+  <title>Car Advertisement Explorer | 3009ICT Task 4b</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
+  <div class="page">
+    <header>
       <h1>Car Advertisement Explorer</h1>
       <p class="course">3009ICT Data Processing and Visualisation</p>
-      <p class="intro">Interactive analysis of 30,237 cleaned car advertisements.</p>
-    </div>
-  </header>
+      <p class="task">Task 4b – Interactive Visualisations</p>
+    </header>
 
-  <div class="container layout">
-    <aside class="filters" aria-label="Filters">
-      <div class="filters-head">
-        <h2>Filters</h2>
-        <button type="button" id="reset" class="btn-link">Reset</button>
-      </div>
-
-      <label class="field">
-        <span>Search car name</span>
-        <input type="search" id="f-search" placeholder="e.g. Corolla">
-      </label>
-
-      <label class="field">
-        <span>Brand</span>
+    <section class="filters" aria-label="Filters">
+      <label>
+        Brand
         <select id="f-brand"><option value="">All</option></select>
       </label>
-
-      <label class="field">
-        <span>Body type</span>
-        <select id="f-body"><option value="">All</option></select>
+      <label>
+        Condition
+        <select id="f-condition">
+          <option value="">All</option>
+          <option value="used">Used</option>
+          <option value="new">New</option>
+        </select>
       </label>
-
-      <label class="field">
-        <span>Condition</span>
-        <select id="f-condition"><option value="">All</option></select>
+      <label>
+        Year from
+        <input type="number" id="f-year-min">
       </label>
-
-      <label class="field">
-        <span>Fuel type</span>
-        <select id="f-fuel"><option value="">All</option></select>
+      <label>
+        to
+        <input type="number" id="f-year-max">
       </label>
+      <button type="button" id="reset">Reset Filters</button>
+    </section>
 
-      <label class="field">
-        <span>Transmission</span>
-        <select id="f-transmission"><option value="">All</option></select>
-      </label>
+    <p id="status" class="status">Loading dataset…</p>
 
-      <fieldset class="field">
-        <legend>Year of manufacture</legend>
-        <div class="range-row">
-          <input type="number" id="f-year-min" aria-label="Minimum year">
-          <span>to</span>
-          <input type="number" id="f-year-max" aria-label="Maximum year">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Interactive Visualisation 1 – Mileage vs Price</h2>
+        <label class="option"><input type="checkbox" id="log-scale" checked> Log price scale</label>
+      </div>
+      <p class="note">
+        Each point is one advertisement, showing how advertised price changes with mileage. Hover over a point for vehicle details.
+      </p>
+      <div class="chart-box"><canvas id="chart-scatter"></canvas></div>
+      <p class="caption">Up to 4,000 randomly sampled listings are plotted, and the mileage axis is capped at the 99th percentile.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Interactive Visualisation 2 – Price by Year of Manufacture</h2>
+        <div class="option">
+          <label><input type="radio" name="trend-stat" value="median" checked> Median</label>
+          <label><input type="radio" name="trend-stat" value="mean"> Mean</label>
         </div>
-      </fieldset>
+      </div>
+      <p class="note">
+        Median price is shown by default because a small number of very expensive vehicles can distort the mean.
+      </p>
+      <div class="chart-box"><canvas id="chart-trend"></canvas></div>
+    </section>
 
-      <fieldset class="field">
-        <legend>Price (AUD)</legend>
-        <div class="range-row">
-          <input type="number" id="f-price-min" placeholder="Min" step="1000" aria-label="Minimum price">
-          <span>to</span>
-          <input type="number" id="f-price-max" placeholder="Max" step="1000" aria-label="Maximum price">
-        </div>
-      </fieldset>
-
-      <label class="field">
-        <span>Max mileage: <strong id="mileage-label">Any</strong></span>
-        <input type="range" id="f-mileage" min="0" max="300000" step="5000" value="300000">
-      </label>
-
-      <button type="button" id="download" class="btn">Download Filtered Data</button>
-    </aside>
-
-    <main>
-      <section class="summary" aria-live="polite">
-        <div class="stat"><span class="stat-label">Median Price</span><span class="stat-value" id="k-price">–</span></div>
-        <div class="stat"><span class="stat-label">Median Mileage</span><span class="stat-value" id="k-mileage">–</span></div>
-        <div class="stat"><span class="stat-label">Median Year</span><span class="stat-value" id="k-year">–</span></div>
-        <div class="stat"><span class="stat-label">Number of Listings</span><span class="stat-value" id="k-count">–</span></div>
-      </section>
-
-      <p id="status" class="status">Loading dataset…</p>
-
-      <section class="panel" id="vis1">
-        <p class="vis-label">Interactive Visualisation 1</p>
-        <div class="panel-head">
-          <h2>Mileage vs Price</h2>
-          <label class="option"><input type="checkbox" id="log-scale" checked> Log price scale</label>
-        </div>
-        <p class="note">
-          This scatter plot shows the relationship between vehicle mileage and advertised price.
-          Hover over individual listings for vehicle details, click New or Used in the legend to show or hide them,
-          and use the filters to explore different sections of the dataset.
-        </p>
-        <div class="chart-box tall"><canvas id="chart-scatter"></canvas></div>
-        <p class="small">
-          To keep the chart responsive, a random sample of up to 4,000 matching listings is plotted.
-          The mileage axis stops at the 99th percentile so a few extreme odometer readings do not compress the rest of the data.
-        </p>
-      </section>
-
-      <section class="panel" id="vis2">
-        <p class="vis-label">Interactive Visualisation 2</p>
-        <div class="panel-head">
-          <h2>Price by Year of Manufacture</h2>
-          <div class="option" role="radiogroup" aria-label="Price statistic">
-            <label><input type="radio" name="trend-stat" value="median" checked> Median</label>
-            <label><input type="radio" name="trend-stat" value="mean"> Mean</label>
-          </div>
-        </div>
-        <p class="note">
-          Median price is used by default because a small number of very expensive vehicles can distort the mean.
-          Switch to Mean to see this effect, and use the filters to compare price trends across different groups of cars.
-          The grey bars show the number of listings for each year.
-        </p>
-        <div class="chart-box"><canvas id="chart-trend"></canvas></div>
-      </section>
-
-      <section>
-        <h2 class="section-title">Other Charts</h2>
-        <div class="small-charts">
-          <div class="panel">
-            <h3>Listings by Body Type</h3>
-            <div class="chart-box short"><canvas id="chart-body"></canvas></div>
-          </div>
-          <div class="panel">
-            <h3>Fuel Type</h3>
-            <div class="chart-box short"><canvas id="chart-fuel"></canvas></div>
-          </div>
-          <div class="panel">
-            <h3>Top 10 Brands by Listings</h3>
-            <div class="chart-box short"><canvas id="chart-brands"></canvas></div>
-          </div>
-          <div class="panel">
-            <h3>Median Price by Drive Type</h3>
-            <div class="chart-box short"><canvas id="chart-drive"></canvas></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel" id="listings">
-        <div class="panel-head">
-          <h2>Car Listings</h2>
-          <span id="table-info" class="small"></span>
-        </div>
-        <p class="note">Filtered by the options on the left. Click a column heading to sort.</p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th data-key="name">Car</th>
-                <th data-key="year" class="num">Year</th>
-                <th data-key="body">Body</th>
-                <th data-key="condition">Condition</th>
-                <th data-key="mileage" class="num">Mileage (km)</th>
-                <th data-key="fuel">Fuel</th>
-                <th data-key="transmission">Transmission</th>
-                <th data-key="price" class="num">Price (AUD)</th>
-              </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-          </table>
-        </div>
-        <div class="pager">
-          <button type="button" id="prev" class="btn-secondary">Previous</button>
-          <span id="page-info"></span>
-          <button type="button" id="next" class="btn-secondary">Next</button>
-        </div>
-      </section>
-
-      <section class="panel" id="about">
-        <h2>Methodology</h2>
-        <p>
-          This dashboard uses the cleaned dataset produced during Tasks 1 and 2 of the assignment. Invalid values and
-          outliers were reviewed during data cleaning, missing numerical values were imputed using the median, and
-          categorical missing values were treated using the mode where appropriate.
-        </p>
-        <p>
-          For the website, only the columns needed for the charts and table were kept, drive type labels were shortened
-          (FWD, RWD, AWD, 4WD), and any remaining values recorded as “-” are shown as “unknown”. For dashboard display,
-          prices were rounded to the nearest dollar and mileage to the nearest kilometre.
-        </p>
-        <p>
-          The dataset does not include the date each advertisement was listed, so price trends are shown by year of
-          manufacture. Medians are used for the summary statistics because a small number of luxury vehicles priced
-          above $1 million would heavily affect the averages.
-        </p>
-      </section>
-    </main>
+    <footer>
+      Interactive visualisations created for Task 4b using the cleaned dataset from Tasks 1 and 2.
+    </footer>
   </div>
-
-  <footer class="site-footer">
-    <div class="container">
-      3009ICT Data Processing and Visualisation<br>
-      Car Advertisement Explorer
-    </div>
-  </footer>
 </body>
 </html>
