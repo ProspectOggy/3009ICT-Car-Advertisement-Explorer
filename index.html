@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Australian Car Advertisement Explorer</title>
+  <meta name="description" content="Interactive dashboard analysing Australian car advertisements: mileage vs price, price trends, and vehicle characteristics.">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div>
+        <p class="eyebrow">3009ICT Project</p>
+        <h1>Australian Car Advertisement Explorer</h1>
+        <p class="subtitle">Explore 30,000+ car listings: how mileage, age and vehicle type shape asking prices.</p>
+      </div>
+      <nav class="site-nav">
+        <a href="#overview">Overview</a>
+        <a href="#charts">Charts</a>
+        <a href="#listings">Listings</a>
+        <a href="#about">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container layout">
+    <aside class="filters" aria-label="Filters">
+      <div class="filters-head">
+        <h2>Filters</h2>
+        <button type="button" id="reset" class="btn-link">Reset</button>
+      </div>
+
+      <label class="field">
+        <span>Search model</span>
+        <input type="search" id="f-search" placeholder="e.g. Corolla, Ranger">
+      </label>
+
+      <label class="field">
+        <span>Brand</span>
+        <select id="f-brand"><option value="">All brands</option></select>
+      </label>
+
+      <label class="field">
+        <span>Body type</span>
+        <select id="f-body"><option value="">All body types</option></select>
+      </label>
+
+      <label class="field">
+        <span>Condition</span>
+        <select id="f-condition"><option value="">New and used</option></select>
+      </label>
+
+      <label class="field">
+        <span>Fuel type</span>
+        <select id="f-fuel"><option value="">All fuel types</option></select>
+      </label>
+
+      <label class="field">
+        <span>Transmission</span>
+        <select id="f-transmission"><option value="">All transmissions</option></select>
+      </label>
+
+      <label class="field">
+        <span>Origin</span>
+        <select id="f-origin"><option value="">All origins</option></select>
+      </label>
+
+      <fieldset class="field range">
+        <legend>Year of manufacture</legend>
+        <div class="range-row">
+          <input type="number" id="f-year-min" aria-label="Minimum year">
+          <span>to</span>
+          <input type="number" id="f-year-max" aria-label="Maximum year">
+        </div>
+      </fieldset>
+
+      <fieldset class="field range">
+        <legend>Price (AUD)</legend>
+        <div class="range-row">
+          <input type="number" id="f-price-min" placeholder="Min" step="1000" aria-label="Minimum price">
+          <span>to</span>
+          <input type="number" id="f-price-max" placeholder="Max" step="1000" aria-label="Maximum price">
+        </div>
+      </fieldset>
+
+      <label class="field">
+        <span>Max mileage: <strong id="mileage-label">Any</strong></span>
+        <input type="range" id="f-mileage" min="0" max="300000" step="5000" value="300000">
+      </label>
+
+      <button type="button" id="download" class="btn">Download filtered CSV</button>
+    </aside>
+
+    <main>
+      <section id="overview" class="kpis" aria-live="polite">
+        <div class="kpi"><span class="kpi-label">Listings</span><span class="kpi-value" id="k-count">–</span></div>
+        <div class="kpi"><span class="kpi-label">Median price</span><span class="kpi-value" id="k-price">–</span></div>
+        <div class="kpi"><span class="kpi-label">Median mileage</span><span class="kpi-value" id="k-mileage">–</span></div>
+        <div class="kpi"><span class="kpi-label">Median year</span><span class="kpi-value" id="k-year">–</span></div>
+      </section>
+
+      <p id="status" class="status">Loading dataset…</p>
+
+      <section id="charts" class="charts">
+        <article class="card wide">
+          <div class="card-head">
+            <h3>Mileage vs price</h3>
+            <label class="toggle"><input type="checkbox" id="log-scale" checked> Log price scale</label>
+          </div>
+          <p class="card-note">Each dot is one listing. Up to 4,000 listings are drawn at random so the chart stays responsive, and the mileage axis stops at the 99th percentile to hide extreme odometer readings.</p>
+          <div class="chart-box tall"><canvas id="chart-scatter"></canvas></div>
+        </article>
+
+        <article class="card wide">
+          <h3>Price trend by year of manufacture</h3>
+          <p class="card-note">Median asking price (line) and number of listings (bars) for each manufacture year.</p>
+          <div class="chart-box"><canvas id="chart-trend"></canvas></div>
+        </article>
+
+        <article class="card">
+          <h3>Listings by body type</h3>
+          <div class="chart-box"><canvas id="chart-body"></canvas></div>
+        </article>
+
+        <article class="card">
+          <h3>Fuel type share</h3>
+          <div class="chart-box"><canvas id="chart-fuel"></canvas></div>
+        </article>
+
+        <article class="card">
+          <h3>Top 10 brands by listings</h3>
+          <div class="chart-box"><canvas id="chart-brands"></canvas></div>
+        </article>
+
+        <article class="card">
+          <h3>Median price by drive type</h3>
+          <div class="chart-box"><canvas id="chart-drive"></canvas></div>
+        </article>
+      </section>
+
+      <section id="listings" class="card">
+        <div class="card-head">
+          <h3>Listings</h3>
+          <span id="table-info" class="card-note"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="name">Car</th>
+                <th data-key="year" class="num">Year</th>
+                <th data-key="body">Body</th>
+                <th data-key="condition">Condition</th>
+                <th data-key="mileage" class="num">Mileage (km)</th>
+                <th data-key="fuel">Fuel</th>
+                <th data-key="transmission">Transmission</th>
+                <th data-key="price" class="num">Price (AUD)</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <button type="button" id="prev" class="btn-secondary">Previous</button>
+          <span id="page-info"></span>
+          <button type="button" id="next" class="btn-secondary">Next</button>
+        </div>
+      </section>
+
+      <section id="about" class="card about">
+        <h3>About this project</h3>
+        <p>
+          This dashboard explores a cleaned dataset of <strong>30,237 car advertisements</strong> covering 76 brands,
+          manufactured between 1990 and 2023. Every chart and the listings table update instantly as you change the filters.
+        </p>
+        <h4>Data preparation</h4>
+        <ul>
+          <li>Kept the columns needed for analysis: model, brand, body type, condition, year, mileage, price, fuel, transmission, drive type and specifications.</li>
+          <li>Standardised drive type labels (FWD, RWD, AWD, 4WD) and replaced missing values marked with “-” by “unknown”.</li>
+          <li>Rounded prices to the nearest dollar and mileage to the nearest kilometre.</li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+          <li>The dataset has no listing date, so price trends are shown by <em>year of manufacture</em>.</li>
+          <li>Medians are used instead of means because a small number of luxury vehicles (over $1M) heavily skew averages.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">Built with HTML, CSS, JavaScript, Chart.js and PapaParse. Hosted on GitHub Pages.</div>
+  </footer>
+</body>
+</html>
