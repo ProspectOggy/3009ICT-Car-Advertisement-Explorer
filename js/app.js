@@ -5,7 +5,8 @@ const SCATTER_MAX_POINTS = 4000;
 const PAGE_SIZE = 25;
 const MILEAGE_ANY = 300000;
 
-const PALETTE = ["#2563eb", "#f97316", "#10b981", "#8b5cf6", "#ef4444", "#14b8a6", "#eab308", "#ec4899", "#64748b", "#0ea5e9"];
+const ACCENT = "#1f5fbf";
+const PALETTE = [ACCENT, "#d9822b", "#4a9d6e", "#8a6fb3", "#999999"];
 
 const aud = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 const num = new Intl.NumberFormat("en-AU");
@@ -19,7 +20,6 @@ const els = {
   condition: $("f-condition"),
   fuel: $("f-fuel"),
   transmission: $("f-transmission"),
-  origin: $("f-origin"),
   yearMin: $("f-year-min"),
   yearMax: $("f-year-max"),
   priceMin: $("f-price-min"),
@@ -35,7 +35,7 @@ const els = {
   next: $("next"),
 };
 
-const CATEGORY_FILTERS = ["brand", "body", "condition", "fuel", "transmission", "origin"];
+const CATEGORY_FILTERS = ["brand", "body", "condition", "fuel", "transmission"];
 
 let allRows = [];
 let filtered = [];
@@ -45,7 +45,7 @@ const charts = {};
 
 document.addEventListener("DOMContentLoaded", () => {
   Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
-  Chart.defaults.color = "#5f6b85";
+  Chart.defaults.color = "#555555";
   Chart.defaults.animation = false;
 
   Papa.parse(DATA_URL, {
@@ -67,7 +67,7 @@ function init(rows) {
   yearBounds = { min: Math.min(...years), max: Math.max(...years) };
 
   populateSelect(els.brand, uniqueValues("brand").sort());
-  for (const key of ["body", "condition", "fuel", "transmission", "origin"]) {
+  for (const key of ["body", "condition", "fuel", "transmission"]) {
     populateSelect(els[key], uniqueValues(key, true));
   }
 
@@ -126,6 +126,10 @@ function bindEvents() {
   els.logScale.addEventListener("change", () => {
     charts.scatter.options.scales.y.type = els.logScale.checked ? "logarithmic" : "linear";
     charts.scatter.update();
+  });
+
+  document.querySelectorAll('input[name="trend-stat"]').forEach((radio) => {
+    radio.addEventListener("change", updateTrend);
   });
 
   $("reset").addEventListener("click", () => {
@@ -213,7 +217,17 @@ function createCharts() {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.raw.name}: ${aud.format(ctx.raw.y)}, ${num.format(ctx.raw.x)} km`,
+            title: (items) => items[0].raw.car.name,
+            label: (ctx) => {
+              const car = ctx.raw.car;
+              return [
+                `Year: ${car.year}`,
+                `Price: ${aud.format(car.price)}`,
+                `Mileage: ${num.format(car.mileage)} km`,
+                `Engine: ${car.engine} L`,
+                `Condition: ${capitalise(car.condition)}`,
+              ];
+            },
           },
         },
       },
@@ -233,8 +247,9 @@ function createCharts() {
       plugins: {
         tooltip: {
           callbacks: {
+            title: (items) => `Year: ${items[0].label}`,
             label: (ctx) => ctx.dataset.yAxisID === "y"
-              ? `Median price: ${aud.format(ctx.parsed.y)}`
+              ? `${ctx.dataset.label}: ${aud.format(ctx.parsed.y)}`
               : `Listings: ${num.format(ctx.parsed.y)}`,
           },
         },
@@ -279,7 +294,7 @@ function updateCharts() {
   updateTrend();
 
   const body = countBy(filtered, "body");
-  setBar(charts.body, body.map(([k]) => capitalise(k)), body.map(([, v]) => v), "Listings", PALETTE[0]);
+  setBar(charts.body, body.map(([k]) => capitalise(k)), body.map(([, v]) => v), "Listings", ACCENT);
 
   const fuel = countBy(filtered, "fuel");
   charts.fuel.data = {
@@ -289,29 +304,31 @@ function updateCharts() {
   charts.fuel.update();
 
   const brands = countBy(filtered, "brand").slice(0, 10);
-  setBar(charts.brands, brands.map(([k]) => k), brands.map(([, v]) => v), "Listings", PALETTE[3]);
+  setBar(charts.brands, brands.map(([k]) => k), brands.map(([, v]) => v), "Listings", ACCENT);
 
   const drive = groupBy(filtered, "drive")
     .map(([k, rows]) => [k, median(rows.map((r) => r.price))])
     .sort((a, b) => b[1] - a[1]);
-  setBar(charts.drive, drive.map(([k]) => k), drive.map(([, v]) => v), "Median price", PALETTE[2]);
+  setBar(charts.drive, drive.map(([k]) => k), drive.map(([, v]) => v), "Median price", ACCENT);
 }
 
 function updateScatter() {
   const sample = filtered.slice(0, SCATTER_MAX_POINTS);
-  const toPoint = (r) => ({ x: r.mileage, y: r.price, name: r.name });
+  const toPoint = (r) => ({ x: r.mileage, y: r.price, car: r });
   charts.scatter.data.datasets = [
     {
       label: "Used",
       data: sample.filter((r) => r.condition === "used").map(toPoint),
-      backgroundColor: "rgba(37, 99, 235, 0.35)",
+      backgroundColor: "rgba(31, 95, 191, 0.35)",
       pointRadius: 2.5,
+      pointHoverRadius: 5,
     },
     {
       label: "New",
       data: sample.filter((r) => r.condition === "new").map(toPoint),
-      backgroundColor: "rgba(249, 115, 22, 0.55)",
+      backgroundColor: "rgba(217, 130, 43, 0.6)",
       pointRadius: 2.5,
+      pointHoverRadius: 5,
     },
   ];
   const mileages = filtered.map((r) => r.mileage).sort((a, b) => a - b);
@@ -321,16 +338,21 @@ function updateScatter() {
 }
 
 function updateTrend() {
+  const useMean = document.querySelector('input[name="trend-stat"]:checked').value === "mean";
+  const statLabel = useMean ? "Mean price" : "Median price";
+  const average = useMean ? mean : median;
+
   const byYear = groupBy(filtered, "year").sort((a, b) => a[0] - b[0]);
+  charts.trend.options.scales.y.title.text = `${statLabel} (AUD)`;
   charts.trend.data = {
     labels: byYear.map(([year]) => year),
     datasets: [
       {
         type: "line",
-        label: "Median price",
-        data: byYear.map(([, rows]) => median(rows.map((r) => r.price))),
-        borderColor: PALETTE[0],
-        backgroundColor: PALETTE[0],
+        label: statLabel,
+        data: byYear.map(([, rows]) => average(rows.map((r) => r.price))),
+        borderColor: ACCENT,
+        backgroundColor: ACCENT,
         tension: 0.25,
         yAxisID: "y",
         order: 0,
@@ -339,7 +361,7 @@ function updateTrend() {
         type: "bar",
         label: "Listings",
         data: byYear.map(([, rows]) => rows.length),
-        backgroundColor: "rgba(148, 163, 184, 0.45)",
+        backgroundColor: "rgba(160, 160, 160, 0.4)",
         yAxisID: "y1",
         order: 1,
       },
@@ -349,7 +371,7 @@ function updateTrend() {
 }
 
 function setBar(chart, labels, values, label, color) {
-  chart.data = { labels, datasets: [{ label, data: values, backgroundColor: color, borderRadius: 4 }] };
+  chart.data = { labels, datasets: [{ label, data: values, backgroundColor: color }] };
   chart.update();
 }
 
@@ -373,7 +395,7 @@ function renderTable() {
       <td>${escapeHtml(r.name)}</td>
       <td class="num">${r.year}</td>
       <td>${escapeHtml(capitalise(r.body))}</td>
-      <td><span class="pill ${r.condition === "new" ? "new" : ""}">${escapeHtml(capitalise(r.condition))}</span></td>
+      <td>${escapeHtml(capitalise(r.condition))}</td>
       <td class="num">${num.format(r.mileage)}</td>
       <td>${escapeHtml(capitalise(r.fuel))}</td>
       <td>${escapeHtml(capitalise(r.transmission))}</td>
@@ -412,6 +434,11 @@ function median(values) {
   const s = [...values].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+function mean(values) {
+  if (!values.length) return 0;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
 function groupBy(rows, key) {

@@ -1,16 +1,21 @@
-# Australian Car Advertisement Explorer
+# Car Advertisement Explorer
 
-An interactive dashboard analysing 30,000+ Australian car advertisements. It shows how mileage, age and vehicle characteristics relate to asking price.
+3009ICT Data Processing and Visualisation. An interactive dashboard built from the cleaned car advertisement dataset (30,237 records).
 
 **Live site:** https://prospectoggy.github.io/3009ICT-Car-Advertisement-Explorer/
 
-## Features
+## Task 4b interactive visualisations
 
-- **Mileage vs price** scatter plot, split by new and used cars, with an optional log price scale
-- **Price trend by year of manufacture**: median price and number of listings per year
-- **Vehicle characteristics**: body type, fuel type, top brands and median price by drive type
-- **Filters** for model search, brand, body type, condition, fuel, transmission, origin, year, price and mileage
-- **Listings table** that you can sort and page through, plus a download of the filtered data as CSV
+1. **Mileage vs Price** (scatter plot): hover tooltips with vehicle details, a clickable New/Used legend, a log/linear price scale toggle, and updates from the dashboard filters.
+2. **Price by Year of Manufacture** (line and bar chart): median or mean price per year with listing counts, hover details, and updates from the dashboard filters.
+
+## Other features
+
+- Filters for car name, brand, body type, condition, fuel type, transmission, year, price and mileage
+- Summary statistics (median price, mileage and year, plus the number of listings)
+- Supporting charts for body type, fuel type, top brands and drive type
+- A sortable, paginated listings table
+- Download of the filtered data as CSV
 
 ## Project structure
 
@@ -18,25 +23,17 @@ An interactive dashboard analysing 30,000+ Australian car advertisements. It sho
 index.html               Page layout
 css/styles.css           Styling
 js/app.js                Data loading, filters, charts and table
-data/cars.csv            Compact dataset used by the site
-scripts/prepare_data.py  Builds data/cars.csv from the cleaned source dataset
+data/cars.csv            Dataset used by the site
+scripts/prepare_data.py  Builds data/cars.csv from the cleaned dataset
 ```
 
 ## Running locally
-
-The page loads `data/cars.csv` with a web request, so it needs a local web server. Opening `index.html` directly won't work.
 
 ```
 python -m http.server 8000
 ```
 
 Then open http://localhost:8000.
-
-## Rebuilding the dataset
-
-```
-python scripts/prepare_data.py path/to/processed_car_detail_en.csv
-```
 
 ## Built with
 
