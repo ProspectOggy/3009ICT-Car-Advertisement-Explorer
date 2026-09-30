@@ -56,6 +56,11 @@ function init(rows) {
     els.brand.appendChild(opt);
   }
 
+  for (let year = yearBounds.min; year <= yearBounds.max; year++) {
+    els.yearMin.add(new Option(year, year));
+    els.yearMax.add(new Option(year, year));
+  }
+
   resetFilters();
   createCharts();
   bindEvents();
@@ -67,8 +72,6 @@ function resetFilters() {
   els.condition.value = "";
   els.yearMin.value = yearBounds.min;
   els.yearMax.value = yearBounds.max;
-  els.yearMin.min = els.yearMax.min = yearBounds.min;
-  els.yearMin.max = els.yearMax.max = yearBounds.max;
 }
 
 function bindEvents() {
@@ -94,8 +97,8 @@ function bindEvents() {
 function applyFilters() {
   const brand = els.brand.value;
   const condition = els.condition.value;
-  const yearMin = els.yearMin.value === "" ? yearBounds.min : Number(els.yearMin.value);
-  const yearMax = els.yearMax.value === "" ? yearBounds.max : Number(els.yearMax.value);
+  const yearMin = Number(els.yearMin.value);
+  const yearMax = Number(els.yearMax.value);
 
   filtered = allRows.filter((r) =>
     (!brand || r.brand === brand) &&
