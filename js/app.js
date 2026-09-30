@@ -9,17 +9,28 @@ const num = new Intl.NumberFormat("en-AU");
 
 const $ = (id) => document.getElementById(id);
 
-const els = {
-  brand: $("f-brand"),
-  condition: $("f-condition"),
-  yearMin: $("f-year-min"),
-  yearMax: $("f-year-max"),
-  logScale: $("log-scale"),
-  status: $("status"),
+const TREND_NOTES = {
+  median: "Median price is shown by default because a small number of very expensive vehicles can distort the mean.",
+  mean: "Mean price is the average of all listings, so a small number of very expensive vehicles can pull it above the typical price. Compare it with the median to see this effect.",
 };
 
+// Each chart has its own filter bar. "s" = scatter plot, "t" = trend chart.
+function filterBar(prefix) {
+  return {
+    brand: $(`${prefix}-brand`),
+    condition: $(`${prefix}-condition`),
+    yearMin: $(`${prefix}-year-min`),
+    yearMax: $(`${prefix}-year-max`),
+    reset: $(`${prefix}-reset`),
+    status: $(`${prefix}-status`),
+  };
+}
+
+const scatterFilters = filterBar("s");
+const trendFilters = filterBar("t");
+const logScale = $("log-scale");
+
 let allRows = [];
-let filtered = [];
 let yearBounds = { min: 1990, max: 2023 };
 let scatterChart;
 let trendChart;
@@ -36,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     skipEmptyLines: true,
     complete: (result) => init(result.data),
     error: (err) => {
-      els.status.textContent = `Could not load the dataset (${err.message}).`;
+      scatterFilters.status.textContent = trendFilters.status.textContent = `Could not load the dataset (${err.message}).`;
     },
   });
 });
@@ -49,66 +60,62 @@ function init(rows) {
   yearBounds = { min: Math.min(...years), max: Math.max(...years) };
 
   const brands = [...new Set(allRows.map((r) => r.brand))].sort();
-  for (const brand of brands) {
-    const opt = document.createElement("option");
-    opt.value = brand;
-    opt.textContent = brand;
-    els.brand.appendChild(opt);
-  }
 
-  for (let year = yearBounds.min; year <= yearBounds.max; year++) {
-    els.yearMin.add(new Option(year, year));
-    els.yearMax.add(new Option(year, year));
-  }
-
-  resetFilters();
   createCharts();
-  bindEvents();
-  applyFilters();
-}
+  setUpFilterBar(scatterFilters, brands, updateScatter);
+  setUpFilterBar(trendFilters, brands, updateTrend);
 
-function resetFilters() {
-  els.brand.value = "";
-  els.condition.value = "";
-  els.yearMin.value = yearBounds.min;
-  els.yearMax.value = yearBounds.max;
-}
-
-function bindEvents() {
-  for (const input of [els.brand, els.condition, els.yearMin, els.yearMax]) {
-    input.addEventListener("change", applyFilters);
-  }
-
-  $("reset").addEventListener("click", () => {
-    resetFilters();
-    applyFilters();
-  });
-
-  els.logScale.addEventListener("change", () => {
-    scatterChart.options.scales.y.type = els.logScale.checked ? "logarithmic" : "linear";
+  logScale.addEventListener("change", () => {
+    scatterChart.options.scales.y.type = logScale.checked ? "logarithmic" : "linear";
     scatterChart.update();
   });
 
   document.querySelectorAll('input[name="trend-stat"]').forEach((radio) => {
     radio.addEventListener("change", updateTrend);
   });
+
+  updateScatter();
+  updateTrend();
 }
 
-function applyFilters() {
-  const brand = els.brand.value;
-  const condition = els.condition.value;
-  const yearMin = Number(els.yearMin.value);
-  const yearMax = Number(els.yearMax.value);
+function setUpFilterBar(bar, brands, onChange) {
+  for (const brand of brands) bar.brand.add(new Option(brand, brand));
+  for (let year = yearBounds.min; year <= yearBounds.max; year++) {
+    bar.yearMin.add(new Option(year, year));
+    bar.yearMax.add(new Option(year, year));
+  }
+  resetFilterBar(bar);
 
-  filtered = allRows.filter((r) =>
+  for (const input of [bar.brand, bar.condition, bar.yearMin, bar.yearMax]) {
+    input.addEventListener("change", onChange);
+  }
+  bar.reset.addEventListener("click", () => {
+    resetFilterBar(bar);
+    onChange();
+  });
+}
+
+function resetFilterBar(bar) {
+  bar.brand.value = "";
+  bar.condition.value = "";
+  bar.yearMin.value = yearBounds.min;
+  bar.yearMax.value = yearBounds.max;
+}
+
+function filterRows(bar) {
+  const brand = bar.brand.value;
+  const condition = bar.condition.value;
+  const yearMin = Number(bar.yearMin.value);
+  const yearMax = Number(bar.yearMax.value);
+
+  const rows = allRows.filter((r) =>
     (!brand || r.brand === brand) &&
     (!condition || r.condition === condition) &&
     r.year >= yearMin && r.year <= yearMax
   );
 
-  els.status.textContent = filtered.length ? "" : "No listings match the selected filters.";
-  updateScatter();
-  updateTrend();
+  bar.status.textContent = rows.length ? "" : "No listings match the selected filters.";
+  return rows;
 }
 
 /* ---------- Charts ---------- */
@@ -173,6 +180,7 @@ function createCharts() {
 }
 
 function updateScatter() {
+  const filtered = filterRows(scatterFilters);
   const sample = filtered.slice(0, SCATTER_MAX_POINTS);
   const toPoint = (r) => ({ x: r.mileage, y: r.price, car: r });
 
@@ -201,12 +209,14 @@ function updateScatter() {
 }
 
 function updateTrend() {
-  const useMean = document.querySelector('input[name="trend-stat"]:checked').value === "mean";
+  const stat = document.querySelector('input[name="trend-stat"]:checked').value;
+  const useMean = stat === "mean";
   const statLabel = useMean ? "Mean price" : "Median price";
   const average = useMean ? mean : median;
+  $("trend-note").textContent = TREND_NOTES[stat];
 
   const byYear = new Map();
-  for (const r of filtered) {
+  for (const r of filterRows(trendFilters)) {
     if (!byYear.has(r.year)) byYear.set(r.year, []);
     byYear.get(r.year).push(r.price);
   }

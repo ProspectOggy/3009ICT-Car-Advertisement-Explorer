@@ -42,11 +42,11 @@ h1 {
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 12px;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: #f9f9f9;
+  border: 1px solid #e3e3e3;
   border-radius: 4px;
-  padding: 10px 12px;
-  margin-bottom: 14px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
   font-size: 0.875rem;
 }
 
@@ -66,8 +66,8 @@ h1 {
 }
 
 .filters select { min-width: 160px; }
-.filters #f-year-min,
-.filters #f-year-max { min-width: 90px; }
+.filters select[id$="year-min"],
+.filters select[id$="year-max"] { min-width: 90px; }
 
 .filters button {
   font: inherit;
@@ -80,7 +80,7 @@ h1 {
 }
 
 .status {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   color: #555;
 }
 

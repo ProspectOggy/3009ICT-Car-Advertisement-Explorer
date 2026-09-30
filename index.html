@@ -17,32 +17,6 @@
       <p class="task">Task 4b – Interactive Visualisations</p>
     </header>
 
-    <section class="filters" aria-label="Filters">
-      <label>
-        Brand
-        <select id="f-brand"><option value="">All</option></select>
-      </label>
-      <label>
-        Condition
-        <select id="f-condition">
-          <option value="">All</option>
-          <option value="used">Used</option>
-          <option value="new">New</option>
-        </select>
-      </label>
-      <label>
-        Year from
-        <select id="f-year-min"></select>
-      </label>
-      <label>
-        to
-        <select id="f-year-max"></select>
-      </label>
-      <button type="button" id="reset">Reset Filters</button>
-    </section>
-
-    <p id="status" class="status">Loading dataset…</p>
-
     <section class="panel">
       <div class="panel-head">
         <h2>Interactive Visualisation 1 – Mileage vs Price</h2>
@@ -51,6 +25,32 @@
       <p class="note">
         Each point is one advertisement, showing how advertised price changes with mileage. Hover over a point for vehicle details.
       </p>
+
+      <div class="filters" aria-label="Filters for Mileage vs Price">
+        <label>
+          Brand
+          <select id="s-brand"><option value="">All</option></select>
+        </label>
+        <label>
+          Condition
+          <select id="s-condition">
+            <option value="">All</option>
+            <option value="used">Used</option>
+            <option value="new">New</option>
+          </select>
+        </label>
+        <label>
+          Year from
+          <select id="s-year-min"></select>
+        </label>
+        <label>
+          to
+          <select id="s-year-max"></select>
+        </label>
+        <button type="button" id="s-reset">Reset Filters</button>
+      </div>
+
+      <p id="s-status" class="status">Loading dataset…</p>
       <div class="chart-box"><canvas id="chart-scatter"></canvas></div>
       <p class="caption">Up to 4,000 randomly sampled listings are plotted, and the mileage axis is capped at the 99th percentile.</p>
     </section>
@@ -63,9 +63,35 @@
           <label><input type="radio" name="trend-stat" value="mean"> Mean</label>
         </div>
       </div>
-      <p class="note">
+      <p class="note" id="trend-note">
         Median price is shown by default because a small number of very expensive vehicles can distort the mean.
       </p>
+
+      <div class="filters" aria-label="Filters for Price by Year of Manufacture">
+        <label>
+          Brand
+          <select id="t-brand"><option value="">All</option></select>
+        </label>
+        <label>
+          Condition
+          <select id="t-condition">
+            <option value="">All</option>
+            <option value="used">Used</option>
+            <option value="new">New</option>
+          </select>
+        </label>
+        <label>
+          Year from
+          <select id="t-year-min"></select>
+        </label>
+        <label>
+          to
+          <select id="t-year-max"></select>
+        </label>
+        <button type="button" id="t-reset">Reset Filters</button>
+      </div>
+
+      <p id="t-status" class="status">Loading dataset…</p>
       <div class="chart-box"><canvas id="chart-trend"></canvas></div>
     </section>
 
