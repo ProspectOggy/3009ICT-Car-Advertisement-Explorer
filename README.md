@@ -7,7 +7,7 @@
 ## Interactive visualisations
 
 1. **Mileage vs Price** (scatter plot): hover over a point to see the car name, year, price, mileage and condition. Click New or Used in the legend to show or hide them, and switch between a log and linear price scale.
-2. **Price by Year of Manufacture** (line chart): switch between median and mean price. Hover to see the year, the price statistic and the number of listings.
+2. **Price by Year of Manufacture** (line chart): separate lines for new and used cars, with a clickable legend. Switch between median and mean price, and hover to see the year, the price statistic and the number of listings.
 
 Both charts update with the Brand, Condition and Year range filters.
 

@@ -10,7 +10,7 @@ const num = new Intl.NumberFormat("en-AU");
 const $ = (id) => document.getElementById(id);
 
 const TREND_NOTES = {
-  median: "Median price is shown by default because a small number of very expensive vehicles can distort the mean.",
+  median: "Median price is shown by default because a small number of very expensive vehicles can distort the mean. Click New or Used in the legend to show or hide each line.",
   mean: "Mean price is the average of all listings, so a small number of very expensive vehicles can pull it above the typical price. Compare it with the median to see this effect.",
 };
 
@@ -164,14 +164,13 @@ function createCharts() {
         y: { title: { display: true, text: "Median price (AUD)" }, ticks: { callback: (v) => aud.format(v) } },
       },
       plugins: {
-        legend: { display: false },
         tooltip: {
+          filter: (item) => item.parsed.y != null,
           callbacks: {
             title: (items) => `Year: ${items[0].label}`,
-            label: (ctx) => [
-              `${ctx.dataset.label}: ${aud.format(ctx.parsed.y)}`,
-              `Listings: ${num.format(ctx.dataset.counts[ctx.dataIndex])}`,
-            ],
+            label: (ctx) =>
+              `${ctx.dataset.label} – ${ctx.dataset.statLabel.toLowerCase()}: ${aud.format(ctx.parsed.y)} ` +
+              `(${num.format(ctx.dataset.counts[ctx.dataIndex])} listings)`,
           },
         },
       },
@@ -215,26 +214,27 @@ function updateTrend() {
   const average = useMean ? mean : median;
   $("trend-note").textContent = TREND_NOTES[stat];
 
-  const byYear = new Map();
-  for (const r of filterRows(trendFilters)) {
-    if (!byYear.has(r.year)) byYear.set(r.year, []);
-    byYear.get(r.year).push(r.price);
-  }
-  const years = [...byYear.keys()].sort((a, b) => a - b);
+  const rows = filterRows(trendFilters);
+  const years = [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b);
+
+  // One line per condition, like the static chart in Task 4a. Years with no listings for a group are left as gaps.
+  const lineFor = (condition, label, color) => {
+    const pricesByYear = years.map((y) => rows.filter((r) => r.year === y && r.condition === condition).map((r) => r.price));
+    return {
+      label,
+      statLabel,
+      data: pricesByYear.map((prices) => (prices.length ? average(prices) : null)),
+      counts: pricesByYear.map((prices) => prices.length),
+      borderColor: color,
+      backgroundColor: color,
+      tension: 0.2,
+    };
+  };
 
   trendChart.options.scales.y.title.text = `${statLabel} (AUD)`;
   trendChart.data = {
     labels: years,
-    datasets: [
-      {
-        label: statLabel,
-        data: years.map((y) => average(byYear.get(y))),
-        counts: years.map((y) => byYear.get(y).length),
-        borderColor: ACCENT,
-        backgroundColor: ACCENT,
-        tension: 0.2,
-      },
-    ],
+    datasets: [lineFor("used", "Used", ACCENT), lineFor("new", "New", "#d9822b")],
   };
   trendChart.update();
 }
