@@ -2,9 +2,11 @@
 
 const DATA_URL = "data/cars.csv";
 const SCATTER_MAX_POINTS = 4000;
-// Same colours as the Seaborn charts in Task 4a, so the interactive charts match the static ones.
-const NEW_COLOUR = "31, 119, 180";
-const USED_COLOUR = "255, 127, 14";
+// Seaborn's default colours, so the interactive charts match the static charts in Task 4a.
+// Seaborn colours groups in the order they first appear in the data, which is why New is blue
+// in the scatter plot but Used is blue in the line chart.
+const SEABORN_BLUE = "31, 119, 180";
+const SEABORN_ORANGE = "255, 127, 14";
 
 const aud = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 const num = new Intl.NumberFormat("en-AU");
@@ -12,8 +14,8 @@ const num = new Intl.NumberFormat("en-AU");
 const $ = (id) => document.getElementById(id);
 
 const TREND_NOTES = {
-  median: "Median price is shown by default because a small number of very expensive vehicles can distort the mean. Click New or Used in the legend to show or hide each line.",
-  mean: "Mean price is the average of all listings, so a small number of very expensive vehicles can pull it above the typical price. Compare it with the median to see this effect.",
+  mean: "Mean (average) price is shown by default, as in the static chart. Switch to Median to see how a small number of very expensive vehicles pull the mean upwards. Click New or Used in the legend to show or hide each line.",
+  median: "Median price is the middle value for each year, so it is not affected by a small number of very expensive vehicles. Compare it with the mean to see how much they distort the average.",
 };
 
 // Each chart has its own filter bar. "s" = scatter plot, "t" = trend chart.
@@ -166,7 +168,7 @@ function createCharts() {
       interaction: { mode: "index", intersect: false },
       scales: {
         x: { title: { display: true, text: "Year of manufacture" } },
-        y: { title: { display: true, text: "Median price (AUD)" }, ticks: { callback: (v) => aud.format(v) } },
+        y: { title: { display: true, text: "Mean price (AUD)" }, ticks: { callback: (v) => aud.format(v) } },
       },
       plugins: {
         tooltip: {
@@ -192,14 +194,14 @@ function updateScatter() {
     {
       label: "New",
       data: sample.filter((r) => r.condition === "new").map(toPoint),
-      backgroundColor: `rgba(${NEW_COLOUR}, 0.4)`,
+      backgroundColor: `rgba(${SEABORN_BLUE}, 0.4)`,
       pointRadius: 3,
       pointHoverRadius: 6,
     },
     {
       label: "Used",
       data: sample.filter((r) => r.condition === "used").map(toPoint),
-      backgroundColor: `rgba(${USED_COLOUR}, 0.4)`,
+      backgroundColor: `rgba(${SEABORN_ORANGE}, 0.4)`,
       pointRadius: 3,
       pointHoverRadius: 6,
     },
@@ -217,7 +219,7 @@ function updateTrend() {
   const rows = filterRows(trendFilters);
   const years = [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b);
 
-  // One line per condition, like the static chart in Task 4a. Years with no listings for a group are left as gaps.
+  // One line per condition, like the static chart in Task 4a.
   const lineFor = (condition, label, color) => {
     const pricesByYear = years.map((y) => rows.filter((r) => r.year === y && r.condition === condition).map((r) => r.price));
     return {
@@ -227,14 +229,15 @@ function updateTrend() {
       counts: pricesByYear.map((prices) => prices.length),
       borderColor: color,
       backgroundColor: color,
-      tension: 0.2,
+      pointRadius: 4,
+      spanGaps: true,
     };
   };
 
   trendChart.options.scales.y.title.text = `${statLabel} (AUD)`;
   trendChart.data = {
     labels: years,
-    datasets: [lineFor("new", "New", `rgb(${NEW_COLOUR})`), lineFor("used", "Used", `rgb(${USED_COLOUR})`)],
+    datasets: [lineFor("used", "Used", `rgb(${SEABORN_BLUE})`), lineFor("new", "New", `rgb(${SEABORN_ORANGE})`)],
   };
   trendChart.update();
 }
