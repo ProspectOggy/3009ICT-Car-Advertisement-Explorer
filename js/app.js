@@ -2,7 +2,9 @@
 
 const DATA_URL = "data/cars.csv";
 const SCATTER_MAX_POINTS = 4000;
-const ACCENT = "#1f5fbf";
+// Same colours as the Seaborn charts in Task 4a, so the interactive charts match the static ones.
+const NEW_COLOUR = "31, 119, 180";
+const USED_COLOUR = "255, 127, 14";
 
 const aud = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 const num = new Intl.NumberFormat("en-AU");
@@ -66,7 +68,9 @@ function init(rows) {
   setUpFilterBar(trendFilters, brands, updateTrend);
 
   logScale.addEventListener("change", () => {
-    scatterChart.options.scales.y.type = logScale.checked ? "logarithmic" : "linear";
+    const y = scatterChart.options.scales.y;
+    y.type = logScale.checked ? "logarithmic" : "linear";
+    y.min = logScale.checked ? undefined : 0;
     scatterChart.update();
   });
 
@@ -127,9 +131,10 @@ function createCharts() {
     options: {
       maintainAspectRatio: false,
       scales: {
-        x: { title: { display: true, text: "Mileage (km)" }, ticks: { callback: (v) => num.format(v) } },
+        x: { min: 0, title: { display: true, text: "Mileage (km)" }, ticks: { callback: (v) => num.format(v) } },
         y: {
-          type: "logarithmic",
+          type: "linear",
+          min: 0,
           title: { display: true, text: "Price (AUD)" },
           ticks: { callback: (v) => aud.format(v), maxTicksLimit: 8 },
         },
@@ -185,25 +190,20 @@ function updateScatter() {
 
   scatterChart.data.datasets = [
     {
-      label: "Used",
-      data: sample.filter((r) => r.condition === "used").map(toPoint),
-      backgroundColor: "rgba(31, 95, 191, 0.35)",
-      pointRadius: 2.5,
-      pointHoverRadius: 5,
-    },
-    {
       label: "New",
       data: sample.filter((r) => r.condition === "new").map(toPoint),
-      backgroundColor: "rgba(217, 130, 43, 0.6)",
-      pointRadius: 2.5,
-      pointHoverRadius: 5,
+      backgroundColor: `rgba(${NEW_COLOUR}, 0.4)`,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+    },
+    {
+      label: "Used",
+      data: sample.filter((r) => r.condition === "used").map(toPoint),
+      backgroundColor: `rgba(${USED_COLOUR}, 0.4)`,
+      pointRadius: 3,
+      pointHoverRadius: 6,
     },
   ];
-
-  // Cap the x-axis at the 99th percentile so a few extreme odometer readings don't squash the chart.
-  const mileages = filtered.map((r) => r.mileage).sort((a, b) => a - b);
-  const p99 = mileages[Math.floor(mileages.length * 0.99)] || 0;
-  scatterChart.options.scales.x.max = p99 > 0 ? Math.ceil(p99 / 10000) * 10000 : undefined;
   scatterChart.update();
 }
 
@@ -234,7 +234,7 @@ function updateTrend() {
   trendChart.options.scales.y.title.text = `${statLabel} (AUD)`;
   trendChart.data = {
     labels: years,
-    datasets: [lineFor("used", "Used", ACCENT), lineFor("new", "New", "#d9822b")],
+    datasets: [lineFor("new", "New", `rgb(${NEW_COLOUR})`), lineFor("used", "Used", `rgb(${USED_COLOUR})`)],
   };
   trendChart.update();
 }

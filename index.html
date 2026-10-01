@@ -20,7 +20,7 @@
     <section class="panel">
       <div class="panel-head">
         <h2>Interactive Visualisation 1 – Mileage vs Price</h2>
-        <label class="option"><input type="checkbox" id="log-scale" checked> Log price scale</label>
+        <label class="option"><input type="checkbox" id="log-scale"> Log price scale</label>
       </div>
       <p class="note">
         Each point is one advertisement, showing how advertised price changes with mileage. Hover over a point for vehicle details.
@@ -52,7 +52,7 @@
 
       <p id="s-status" class="status">Loading dataset…</p>
       <div class="chart-box"><canvas id="chart-scatter"></canvas></div>
-      <p class="caption">Up to 4,000 randomly sampled listings are plotted, and the mileage axis is capped at the 99th percentile.</p>
+      <p class="caption">Up to 4,000 randomly sampled listings are plotted so hovering stays responsive. Tick “Log price scale” to spread out the lower-priced cars.</p>
     </section>
 
     <section class="panel">
