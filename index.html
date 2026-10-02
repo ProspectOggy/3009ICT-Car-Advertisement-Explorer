@@ -20,7 +20,6 @@
     <section class="panel">
       <div class="panel-head">
         <h2>Interactive Visualisation 1 – Mileage vs Price</h2>
-        <label class="option"><input type="checkbox" id="log-scale"> Log price scale</label>
       </div>
       <p class="note">
         Each point is one advertisement, showing how advertised price changes with mileage. Hover over a point for vehicle details.
@@ -47,6 +46,12 @@
           to
           <select id="s-year-max"></select>
         </label>
+        <div class="toggle-group">
+          <span>Scale</span>
+          <div class="option">
+            <label><input type="checkbox" id="log-scale"> Log price scale</label>
+          </div>
+        </div>
         <button type="button" id="s-reset">Reset Filters</button>
       </div>
 
@@ -84,7 +89,7 @@
           to
           <select id="t-year-max"></select>
         </label>
-        <div class="stat-toggle">
+        <div class="toggle-group">
           <span>Statistic</span>
           <div class="option">
             <label><input type="radio" name="trend-stat" value="mean" checked> Mean</label>
