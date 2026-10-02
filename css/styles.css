@@ -69,6 +69,29 @@ h1 {
 .filters select[id$="year-min"],
 .filters select[id$="year-max"] { min-width: 90px; }
 
+.filters .stat-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filters .stat-toggle .option {
+  min-height: 30px;
+  align-items: center;
+}
+
+.filters .stat-toggle label {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.filters .stat-toggle input {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
 .filters button {
   font: inherit;
   padding: 5px 12px;
