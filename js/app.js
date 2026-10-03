@@ -2,6 +2,7 @@
 
 const DATA_URL = "data/cars.csv";
 const SCATTER_MAX_POINTS = 4000;
+const TOOLTIP_MAX_CARS = 5;
 // Seaborn's default colours, so the interactive charts match the static charts in Task 4a.
 // Seaborn colours groups in the order they first appear in the data, which is why New is blue
 // in the scatter plot but Used is blue in the line chart.
@@ -38,6 +39,7 @@ let allRows = [];
 let yearBounds = { min: 1990, max: 2023 };
 let scatterChart;
 let trendChart;
+let carsUnderCursor = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
@@ -143,16 +145,26 @@ function createCharts() {
       },
       plugins: {
         tooltip: {
+          // Several cars can sit on the same spot, so count them and list only the first few.
+          filter: (item, index, items) => {
+            carsUnderCursor = items.length;
+            return index < TOOLTIP_MAX_CARS;
+          },
           callbacks: {
-            title: (items) => items[0].raw.car.name,
+            title: (items) => {
+              if (carsUnderCursor === 1) return items[0].raw.car.name;
+              const shown = carsUnderCursor > TOOLTIP_MAX_CARS ? ` (showing first ${TOOLTIP_MAX_CARS})` : "";
+              return `${carsUnderCursor} listings at this point${shown}`;
+            },
             label: (ctx) => {
               const car = ctx.raw.car;
-              return [
+              const lines = [
                 `Year: ${car.year}`,
                 `Price: ${aud.format(car.price)}`,
                 `Mileage: ${num.format(car.mileage)} km`,
                 `Condition: ${car.condition === "new" ? "New" : "Used"}`,
               ];
+              return carsUnderCursor === 1 ? lines : [car.name, ...lines];
             },
           },
         },
